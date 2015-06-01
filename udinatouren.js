@@ -123,7 +123,7 @@ var facilities = {
         'symbol': 'Restrooms'
     },
     17: { //Parking lot
-        'symbol': 'Parking'
+        'symbol': 'Parking Area'
     },
     34: { //Naturfitness
         'symbol': 'Fitness Center'
@@ -196,10 +196,8 @@ Object.keys(facilities).forEach(function(facility){
                         }
 
                         var wpt = {
-                            //lat: latlon.lat,
-                            //lon: latlon.lon,
-                            lat: parts[1],
-                            lon: parts[2],
+                            lat: parts[2],
+                            lon: parts[1],
                             name: fac.Name,
                             desc: out
                         };
@@ -257,7 +255,7 @@ function finish(){
 //    xw.writeAttribute('lat', 123);
     xw.endElement();
     xw.endDocument();
-    fs.writeFile("mep.xml", xw.toString());
+    fs.writeFile("udinaturen.gpx", xw.toString());
 
 }
 function createWpt(xw, obj, symbol){
