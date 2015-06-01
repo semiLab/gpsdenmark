@@ -3,6 +3,23 @@ var XMLWriter = require('xml-writer');
 var http = require('http');
 var fs = require('fs');
 var geodesy = require('geodesy');
+var htmlparser = require('htmlparser2');
+var Entities = require('html-entities').AllHtmlEntities;
+
+var out = "";
+var parser = new htmlparser.Parser({
+    decodeEntitites: true,
+    ontext: function(text){
+        out += text;
+    }
+});
+var entities = new Entities();
+
+
+
+
+
+
 
 console.log("I am starting");
 
@@ -29,6 +46,7 @@ function incReturned(){
 var struct = {};
 function getData(path, name, callback){
     opts.path = uri+path;
+    //console.log(opts.path);
     var reqGet = http.request(opts, function(res){
         //console.log("statusCode: ", res.statusCode);
         var data = '';
@@ -54,9 +72,6 @@ function getData(path, name, callback){
     });
     reqGet.end();
 }
-//opts.path = uri+'GetLanguageList';
-//reqGet.end();
-
 
 //getData('GetLanguageList', 'LanguageList');
 
@@ -71,23 +86,71 @@ http://www.latlong.net/lat-long-utm.html
 Coordinates are in UTM Zone 32V EUREF89
 */
 
+//Using SubCategoryID
 var facilities = {
     38: { //small campground
+    /*
+     { AttributeID: 6, Name: 'Drikkevand' },
+     { AttributeID: 9, Name: 'Shelter' },
+     { AttributeID: 10, Name: 'Bålplads' },
+     */
         'symbol': 'Campground'
     },
 
     39: { //Large campground
+        /*
+         { AttributeID: 6, Name: 'Drikkevand' },
+         { AttributeID: 7, Name: 'Brænde' },
+         { AttributeID: 9, Name: 'Shelter' },
+         { AttributeID: 10, Name: 'Bålplads' },
+         { AttributeID: 12, Name: 'Mulighed for bad' },
+         */
         'symbol': 'Campground'
     },
     15: { //bonfire place
         'symbol': 'Bonfire'
     },
-    16: { //bonfire shelter
+    16: { //bonfire building
         'symbol': 'Bonfire'
     },
     129: { //water post
         'symbol': 'Drinking Water'
+    },
+    13: { //Madpakkehus
+        'symbol': 'Restaurant'
+    },
+    18: { //Toilet
+        'symbol': 'Restrooms'
+    },
+    17: { //Parking lot
+        'symbol': 'Parking'
+    },
+    34: { //Naturfitness
+        'symbol': 'Fitness Center'
+    },
+    37: { //Fugletaarn
+        'symbol': 'Oil Field'
+    },
+    129: { //Drikkevandspost
+        'symbol': 'Drinking Water'
+    },
+    24: { //Big tree
+        'symbol': 'Park'
+    },
+    114: { //See paa stjerner
+        'symbol': 'Scenic Area'
+    },
+    48: { //Frit fiskeri
+        'symbol': 'Fishing Area'
+    },
+    121: { //Isaetningssted
+        'symbol': 'Boat Ramp'
+    },
+    125: { //Landgangssted
+        'symbol': 'Boat Ramp'
     }
+
+
 };
 
 var nsjl = "622794,6227572,736528,6158743";
@@ -111,27 +174,34 @@ Object.keys(facilities).forEach(function(facility){
             var items = searchRes['SearchResultItemList'];
             //console.log(items[0]);
             items.forEach(function(i){
+                //console.log(i);
                 //GetFacilityData/<lang>/<facilityID/<coordtype 1=lon/lat,2=UTM zone 32N>
-                getData('GetFacilityData/1/'+i['FacilityID'], "/1", function(fac){
+                getData('GetFacilityData/1/'+i['FacilityID']+"/1", "", function(fac){
                     //console.log(fac);
 
                     if(fac.GeometryType === "POINT"){
                         //We need to convert FacilityGeometryWKT from UTM to WGS84.
-
+                        //...no, not for GetFacility_Data_
                         var parts = /POINT\((\S+) (\S+)\)/.exec(fac.FacilityGeometryWKT);
 
-                        //console.log(parts[0]);
-                        //var coordStr = "32 N "+parts[1]+" "+parts[2];
-                        //console.log(coordStr);
-                        //var utm = geodesy.Utm.parse(coordStr);
-                        //var latlon = utm.toLatLonE();
+                        //We need to convert html entities...
+                        out = "";
+                        if(fac.LongDescription !== ""){
+                        var dec = entities.decode(fac.LongDescription);
+                        //...then remove tags with the parser.
+                        parser.write(dec);
+                        parser.end();
+                        }else{
+                            out = fac.ShortDescription;
+                        }
+
                         var wpt = {
                             //lat: latlon.lat,
                             //lon: latlon.lon,
                             lat: parts[1],
                             lon: parts[2],
                             name: fac.Name,
-                            desc: fac.LongDescription
+                            desc: out
                         };
                         if((facility == 38 || facility == 39) 
                            && (/helter/.test(fac.ShortDescription) || /helter/.test(fac.Name)) ){
