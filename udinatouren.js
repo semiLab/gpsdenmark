@@ -33,7 +33,6 @@ var opts = {
     method: 'GET'
 };
 var returned = 0;
-const total = 2;
 function incReturned(){
     returned++;
     var p = Math.floor(returned / total * 100.0);
@@ -86,7 +85,7 @@ http://www.latlong.net/lat-long-utm.html
 Coordinates are in UTM Zone 32V EUREF89
 */
 
-//Using SubCategoryID
+//Using SubCategoryID and waypoint symbols that look approximately like the subject.
 var facilities = {
     38: { //small campground
     /*
@@ -116,7 +115,7 @@ var facilities = {
     129: { //water post
         'symbol': 'Drinking Water'
     },
-    13: { //Madpakkehus
+    13: { //Madpakkehus - shelter for eating lunch
         'symbol': 'Restaurant'
     },
     18: { //Toilet
@@ -128,7 +127,7 @@ var facilities = {
     34: { //Naturfitness
         'symbol': 'Fitness Center'
     },
-    37: { //Fugletaarn
+    37: { //Fugletaarn - bird tower
         'symbol': 'Oil Field'
     },
     129: { //Drikkevandspost
@@ -137,7 +136,7 @@ var facilities = {
     24: { //Big tree
         'symbol': 'Park'
     },
-    114: { //See paa stjerner
+    114: { //See paa stjerner - star watching place
         'symbol': 'Scenic Area'
     },
     48: { //Frit fiskeri
@@ -153,12 +152,15 @@ var facilities = {
 
 };
 
+var total = 0;
+var got = 0;
+
 var nsjl = "622794,6227572,736528,6158743";
 Object.keys(facilities).forEach(function(facility){
     //var facility = 38;
     facilities[facility].gotCount = false;
     getData('FindFacilities/1/'+facility+'/0/0?bbox='+nsjl, '', function(data){
-        console.log("Number found: "+data['Count']);
+        console.log("Facility "+facility+", found: "+data['Count']);
         var symbol = facilities[facility].symbol;
         facilities[facility] = {
             'gotCount' : true,
@@ -167,6 +169,8 @@ Object.keys(facilities).forEach(function(facility){
             'symbol': symbol,
             data : {}
         };
+        total += data.Count;
+
         //    console.log(data);
         getData('GetSearchResultItems/'+data['SearchResultID']+"/0/"+data['Count']+"/0/1", "", function(searchRes){
             //console.log("logging data");
@@ -208,6 +212,9 @@ Object.keys(facilities).forEach(function(facility){
                         facilities[facility].data[i['FacilityID']] = wpt;
                     }
                     facilities[facility].received++;
+                    //console.log(facilities[facility].received+"/"+facilities[facility].total);
+                    got++;
+                    console.log(Math.round(100.0 * got/total)+"%");
                     checkDone();
                 });
             });
@@ -223,7 +230,6 @@ function checkDone(){
     for(var f in facilities){
         var fac = facilities[f];
         //console.log(fac);
-        console.log(fac.received+"/"+fac.total);
         if(!fac.gotCount || fac.received < fac.total){
             return;
         }
@@ -233,13 +239,15 @@ function checkDone(){
 
 function finish(){
     console.log("Finished");
-    struct['CategoryList'].forEach(function(cat){
+    console.log("Received "+total+" waypoints");
+    /*struct['CategoryList'].forEach(function(cat){
         console.log(cat.CategoryID+": "+cat.Name);
         cat.SubCategoryList.forEach(function(sc){
             console.log("\t"+sc.SubCategoryID+": "+sc.Name);
             console.log(sc);
        });
        });
+       */
     //console.log(struct);
     //console.log(struct.CategoryList[0]);
 
@@ -259,8 +267,8 @@ function finish(){
 
 }
 function createWpt(xw, obj, symbol){
-    console.log(obj);
-    console.log(symbol);
+    //console.log(obj);
+    //console.log(symbol);
     xw.startElement('wpt');
     xw.writeAttribute('lat', obj.lat);
     xw.writeAttribute('lon', obj.lon);
